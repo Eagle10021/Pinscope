@@ -13,8 +13,8 @@ android {
         applicationId = "io.github.eagle10021.pinscope"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         // OpenCV ships native code; keep phones (arm64) and the x86_64 emulator only
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }

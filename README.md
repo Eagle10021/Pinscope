@@ -30,7 +30,7 @@ An Android app for the Arduino Mega 2560: see every pin labelled on your real bo
 
 ## Install
 
-Get the APK from [Releases](https://github.com/Eagle10021/Pinscope/releases) and open it on the device.
+Get the APK from [Releases](https://github.com/Eagle10021/Pinscope/releases) and open it on the device. From 0.1.1 on, Pinscope checks Releases when it starts and offers newer versions, betas included; it downloads and installs them itself.
 
 ## Documentation
 

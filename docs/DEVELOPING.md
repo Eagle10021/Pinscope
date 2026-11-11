@@ -18,6 +18,10 @@ cd android && ./gradlew assembleRelease
 - **Part art:** needs a local [fritzing-parts](https://github.com/fritzing/fritzing-parts) checkout (`FRITZING_PARTS=…`) and `rsvg-convert`.
 - **Signing:** release signing reads `android/signing.properties`, which is not in the repository. Without it, release builds are unsigned.
 
+## Releasing
+
+Raise `versionCode` and `versionName` in `android/app/build.gradle.kts`, build the signed release, and publish a GitHub release whose tag holds the version (`v0.1.2-beta`) with the APK attached. Installed apps compare the tag's numbers with their own version on launch (`Updater.kt`, using the public releases API) and offer the download. Releases must be signed with the same key, or Android refuses to install over the old app.
+
 ## Tests
 
 ```bash

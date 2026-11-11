@@ -134,7 +134,40 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var showLabels by mutableStateOf(true)
     var showLive by mutableStateOf(true)
 
+    // ---------- app updates (GitHub releases) ----------
+    var update by mutableStateOf<AppUpdate?>(null)
+    var updateProgress by mutableStateOf<Float?>(null)   // downloading, 0–1
+    var updateError by mutableStateOf<String?>(null)
+    var updateReady by mutableStateOf<java.io.File?>(null) // downloaded, waiting for the install permission
+    val appVersion: String = Updater.installedVersion(app)
+
+    fun checkForUpdate() {
+        viewModelScope.launch {
+            val u = withContext(Dispatchers.IO) { Updater.check(appVersion) } ?: return@launch
+            if (prefs.getString("skipUpdate", null) != u.version) update = u
+        }
+    }
+    fun skipUpdate() { update?.let { prefs.edit().putString("skipUpdate", it.version).apply() }; update = null }
+    fun startUpdate() {
+        val u = update ?: return
+        val ctx = getApplication<Application>()
+        updateReady?.let { f -> if (Updater.install(ctx, f)) update = null; return }
+        val url = u.apkUrl ?: run {
+            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u.pageUrl)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); return
+        }
+        updateError = null; updateProgress = 0f
+        viewModelScope.launch {
+            val f = withContext(Dispatchers.IO) {
+                runCatching { Updater.download(ctx, url) { p -> viewModelScope.launch(Dispatchers.Main) { updateProgress = p } } }
+            }
+            updateProgress = null
+            f.onSuccess { file -> updateReady = file; if (Updater.install(ctx, file)) update = null }
+                .onFailure { updateError = it.message ?: "Download failed" }
+        }
+    }
+
     init {
+        checkForUpdate()
         if (opencv) viewModelScope.launch(Dispatchers.IO) {
             BoardMemory.load(filesDir)?.let { m -> m.debug = detector.debug; learnedMemory = m; withContext(Dispatchers.Main) { learned = true } }
         }

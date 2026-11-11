@@ -65,6 +65,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -189,6 +190,44 @@ private fun App(vm: AppViewModel) {
         }
         }
     }
+    }
+
+    vm.update?.let { u ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (vm.updateProgress == null) vm.update = null },
+            icon = { Icon(androidx.compose.material.icons.Icons.Rounded.Upload, null) },
+            title = { Text("Pinscope ${u.version} is available") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text("You have ${vm.appVersion}." + if (u.prerelease) " This is a beta release." else "", style = MaterialTheme.typography.bodyMedium)
+                    if (u.notes.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(u.notes.replace("\r", "").trim(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    vm.updateProgress?.let { p ->
+                        Spacer(Modifier.height(12.dp))
+                        androidx.compose.material3.LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth())
+                        Text("Downloading… %d%%".format((p * 100).toInt()), style = MaterialTheme.typography.labelSmall)
+                    }
+                    if (vm.updateReady != null && vm.updateProgress == null) {
+                        Spacer(Modifier.height(10.dp))
+                        Text("If Android asked to allow installs from Pinscope, allow it, come back and tap Install.", style = MaterialTheme.typography.bodySmall)
+                    }
+                    vm.updateError?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = { vm.startUpdate() }, enabled = vm.updateProgress == null) {
+                    Text(if (vm.updateReady != null) "Install" else if (u.apkUrl == null) "Open release page" else "Update")
+                }
+            },
+            dismissButton = {
+                Row {
+                    androidx.compose.material3.TextButton(onClick = { vm.skipUpdate() }, enabled = vm.updateProgress == null) { Text("Skip this version") }
+                    androidx.compose.material3.TextButton(onClick = { vm.update = null }, enabled = vm.updateProgress == null) { Text("Later") }
+                }
+            },
+        )
     }
 
     // pin details, from the photo, the diagram or the pin list
