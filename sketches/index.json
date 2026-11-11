@@ -1,0 +1,15 @@
+[
+  {"id": "StandardFirmata", "name": "StandardFirmata", "desc": "Lets Pinscope's Firmata mode control every pin from the phone.", "baud": 57600, "mode": "firmata", "source": "Firmata library example (LGPL 2.1)"},
+  {"id": "Blink", "name": "Blink", "desc": "Blinks the on-board LED on pin 13 once a second.", "baud": 9600, "mode": "none"},
+  {"id": "Fade", "name": "Fade", "desc": "Fades an LED on PWM pin 9 up and down.", "baud": 9600, "mode": "none", "pins": ["D9"]},
+  {"id": "AnalogReadSerial", "name": "Analog read", "desc": "Prints A0's reading and voltage; open the plotter to graph it.", "baud": 9600, "mode": "serial", "pins": ["A0"]},
+  {"id": "PlotterDemo", "name": "Plotter demo", "desc": "Sends three labelled waves. No wiring needed.", "baud": 115200, "mode": "serial"},
+  {"id": "ButtonLed", "name": "Button and LED", "desc": "A button on pin 2 lights the on-board LED and reports presses.", "baud": 9600, "mode": "serial", "pins": ["D2"]},
+  {"id": "ServoSweep", "name": "Servo sweep", "desc": "Sweeps an SG90 servo on pin 9.", "baud": 9600, "mode": "none", "pins": ["D9"]},
+  {"id": "SignalGenerator", "name": "Signal generator", "desc": "Square wave on pin 11 (1 Hz–100 kHz), PWM on pin 9, and sine/triangle/sawtooth on pin 6, set from the serial monitor. For a bench oscilloscope.", "baud": 115200, "mode": "serial", "pins": ["D11", "D9", "D6"]},
+  {"id": "RcCharge", "name": "RC charging", "desc": "Charges a 10 µF capacitor through 1 kΩ from pin 8 and plots the curve against the 10 ms time constant.", "baud": 115200, "mode": "serial", "pins": ["D8", "A0"]},
+  {"id": "ButtonBounce", "name": "Button bounce", "desc": "Counts the edges one press of a button on pin 2 makes, showing contact bounce.", "baud": 115200, "mode": "serial", "pins": ["D2"]},
+  {"id": "LightMeter", "name": "Light meter", "desc": "Plots a photoresistor on A0 as a percentage.", "baud": 9600, "mode": "serial", "pins": ["A0"]},
+  {"id": "Distance", "name": "Distance", "desc": "HC-SR04 ultrasonic sensor on pins 12 and 11, plotted in centimetres.", "baud": 9600, "mode": "serial", "pins": ["D12", "D11"]},
+  {"id": "Climate", "name": "Temperature and humidity", "desc": "DHT11 on pin 2, plotted.", "baud": 9600, "mode": "serial", "pins": ["D2"]}
+]

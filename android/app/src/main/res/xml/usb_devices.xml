@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Arduino LLC / Arduino SA boards (ATmega16U2 USB chip) -->
+    <usb-device vendor-id="9025" />
+    <usb-device vendor-id="10755" />
+    <!-- WCH CH340 / CH341, used on many clone boards -->
+    <usb-device vendor-id="6790" product-id="29987" />
+    <usb-device vendor-id="6790" product-id="21795" />
+</resources>

@@ -1,0 +1,200 @@
+<title>Pinscope Demo Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a presenter's run sheet. Sticky section rail with progress on wide screens, one column on phones. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --sunk:#E8ECF2; --fg:#131A2A; --muted:#566074; --line:#D5DBE5;
+  --accent:#9A6A00; --accent-soft:#FFF1CF; --board:#1F4E9C; --board-soft:#E3ECFA; --sim:#11795A; --sim-soft:#DDF3EA;
+  --pinhole:#C8961E;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif; --body:"Inter",ui-sans-serif,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+:root{color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}}
+header.top{grid-column:1/-1;padding-block:36px 20px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:end;justify-content:space-between;border-bottom:1px solid var(--line)}
+h1{font:700 clamp(30px,5vw,46px)/1.05 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:8px 0 0;max-width:60ch}
+.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip{font:600 12px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:8px 10px;border-radius:6px;background:var(--sunk);color:var(--muted)}
+button.reset{font:600 13px var(--body);background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:7px 12px;cursor:pointer}
+button.reset:hover{color:var(--fg);border-color:var(--muted)}
+nav.rail{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;padding-top:28px;max-height:100vh;overflow:auto}
+@media (max-width:860px){nav.rail{position:static;padding-top:16px;max-height:none}}
+.progress{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;margin:0 0 6px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.ptext{font:500 13px var(--mono);color:var(--muted);margin-bottom:14px;font-variant-numeric:tabular-nums}
+nav.rail a{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;color:var(--fg);text-decoration:none;font-size:14.5px}
+nav.rail a:hover{background:var(--sunk)}
+nav.rail a.done{color:var(--muted)}
+nav.rail a.done .n{background:var(--accent);color:var(--bg)}
+@media (max-width:860px){nav.rail .links{display:flex;flex-wrap:wrap;gap:4px}nav.rail a{padding:5px 8px;font-size:13.5px;background:var(--surface);border:1px solid var(--line)}}
+.n{flex:none;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sunk);font:600 12px var(--mono);color:var(--muted)}
+.n.pre{font-size:13px}
+main{min-width:0;padding-top:12px}
+.sec{padding-block:28px;border-bottom:1px solid var(--line);scroll-margin-top:12px}
+.sechead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start}
+.sechead .n{width:34px;height:34px;font-size:15px;background:var(--accent-soft);color:var(--accent);margin-top:2px}
+h2{font:600 25px/1.2 var(--display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h3{font:600 19px/1.25 var(--display);margin:0}
+.intro{margin:4px 0 0;color:var(--muted);max-width:68ch}
+.mins{font:600 12px var(--mono);color:var(--muted);background:var(--sunk);padding:5px 8px;border-radius:5px;white-space:nowrap;margin-top:6px}
+ol.steps{list-style:none;counter-reset:s;margin:18px 0 0;padding:0;display:grid;gap:4px}
+ol.steps li{counter-increment:s}
+ol.steps label,.kit label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;padding:9px 12px;border-radius:8px;cursor:pointer;align-items:start}
+ol.steps label:hover,.kit label:hover{background:var(--surface)}
+input[type=checkbox]{appearance:none;width:20px;height:20px;margin:2px 0 0;border:2px solid var(--line);border-radius:5px;display:grid;place-items:center;cursor:pointer;background:var(--surface)}
+input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:checked::after{content:"";width:5px;height:10px;border:solid var(--bg);border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+input[type=checkbox]:focus-visible{outline:3px solid var(--board);outline-offset:2px}
+label:has(input:checked) span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+code{font:13.5px var(--mono);background:var(--sunk);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.pin{font:600 13px var(--mono);white-space:nowrap;padding:1px 7px 1px 6px;border-radius:4px;background:var(--sunk);border:1px solid var(--line)}
+.pin::before{content:"";display:inline-block;width:7px;height:7px;border:2px solid var(--pinhole);border-radius:1px;margin-right:6px;vertical-align:0}
+.note{margin:14px 0 0;padding:12px 14px;border-radius:8px;background:var(--accent-soft);font-size:14.5px;max-width:72ch}
+.kit{margin-top:16px;padding:14px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.kit ul{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0 8px}
+.kit label{padding:6px 8px}
+.mlabel{font:600 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.seg{display:inline-flex;margin-top:18px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:600 14px var(--body);border:0;background:none;color:var(--muted);padding:8px 16px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button:focus-visible{outline:3px solid var(--board);outline-offset:-3px}
+.demos{display:grid;gap:18px;margin-top:18px}
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 18px}
+.demo>header,.demo>.what,.demo>.expect{grid-column:1/-1}
+.demo>header{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.file{font-size:12.5px;color:var(--muted);background:none;padding:0}
+.what{margin:6px 0 4px;color:var(--muted);max-width:75ch}
+.mode{padding:12px 4px 4px;border-top:3px solid var(--board);min-width:0}
+.mode[data-mode="sim"]{border-top-color:var(--sim)}
+.mode[data-mode="board"] .mlabel{color:var(--board)}
+.mode[data-mode="sim"] .mlabel{color:var(--sim)}
+.mode ol.steps{margin-top:6px}
+.mode ol.steps label{padding:7px 6px;font-size:15px}
+.demos[data-show="board"] .mode[data-mode="sim"],.demos[data-show="sim"] .mode[data-mode="board"]{display:none}
+.demos[data-show="board"] .demo,.demos[data-show="sim"] .demo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:760px){.demo{grid-template-columns:minmax(0,1fr)}}
+.expect{margin:10px 0 0;font-size:14.5px;display:flex;gap:10px;align-items:baseline}
+.expect span{font:600 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+footer{grid-column:1/-1;color:var(--muted);font-size:13.5px;padding-top:20px}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>Pinscope demo run</h1>
+    <p class="sub">A step-by-step run through every feature, on the real Arduino Mega and on the simulator. Tick steps as you go; ticks stay in this browser.</p>
+  </div>
+  <div class="meta"><span class="chip">About 25 min</span><span class="chip">Tablet + Mega 2560</span><button class="reset" type="button" id="reset">Clear ticks</button></div>
+</header>
+<nav class="rail" aria-label="Sections">
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+  <div class="ptext" id="ptext">0 of 0 steps</div>
+  <div class="links"><a href="#prep"><span class="n pre">✓</span>Before you start</a><a href="#scan"><span class="n">1</span>Pins on the real board</a><a href="#board"><span class="n">2</span>Board diagram and pen wiring</a><a href="#parts"><span class="n">3</span>Kit parts</a><a href="#sim"><span class="n">4</span>Simulator tour</a><a href="#compile"><span class="n">5</span>Write, compile and upload on the tablet</a><a href="#demos"><span class="n">6</span>Demo sketches</a><a href="#firmata"><span class="n">7</span>Firmata and the instruments</a><a href="#scope"><span class="n">8</span>Oscilloscope lab demos</a><a href="#wrap"><span class="n">9</span>Wrap-up</a></div>
+</nav>
+<main>
+<section id="prep" class="sec">
+<div class="sechead"><span class="n pre">✓</span><div><h2>Before you start</h2><p class="intro">Pack and set up once, before anyone is watching.</p></div></div>
+<div class="kit"><div class="mlabel">Bring</div><ul><li><label><input type="checkbox" id="c-kit-0" data-k="kit-0"><span>Arduino Mega 2560 + USB-C OTG cable</span></label></li><li><label><input type="checkbox" id="c-kit-1" data-k="kit-1"><span>Jumper wires and a breadboard</span></label></li><li><label><input type="checkbox" id="c-kit-2" data-k="kit-2"><span>1 kΩ and 10 kΩ resistors</span></label></li><li><label><input type="checkbox" id="c-kit-3" data-k="kit-3"><span>10 µF electrolytic capacitor (stripe to GND)</span></label></li><li><label><input type="checkbox" id="c-kit-4" data-k="kit-4"><span>100 nF ceramic capacitor, marked 104</span></label></li><li><label><input type="checkbox" id="c-kit-5" data-k="kit-5"><span>Push button</span></label></li><li><label><input type="checkbox" id="c-kit-6" data-k="kit-6"><span>Photoresistor (LDR)</span></label></li><li><label><input type="checkbox" id="c-kit-7" data-k="kit-7"><span>HC-SR04 ultrasonic sensor</span></label></li><li><label><input type="checkbox" id="c-kit-8" data-k="kit-8"><span>DHT11 module</span></label></li><li><label><input type="checkbox" id="c-kit-9" data-k="kit-9"><span>SG90 servo (optional)</span></label></li></ul></div><ol class="steps"><li><label><input type="checkbox" id="c-prep-0" data-k="prep-0"><span>Charge the tablet and phone. Turn screen brightness up and Do Not Disturb on.</span></label></li><li><label><input type="checkbox" id="c-prep-1" data-k="prep-1"><span>On the tablet, turn off <b>Settings → Advanced features → S Pen → Air command</b> so the pen's side button erases instead of opening Samsung's menu.</span></label></li><li><label><input type="checkbox" id="c-prep-2" data-k="prep-2"><span>Plug the Mega into the tablet with the OTG cable once, so Android has already granted Pinscope USB access.</span></label></li><li><label><input type="checkbox" id="c-prep-3" data-k="prep-3"><span>Rehearse the scope lab demos on the real board once. They have only been tested in the simulator and in unit tests.</span></label></li><li><label><input type="checkbox" id="c-prep-4" data-k="prep-4"><span>Note which sketch is on the board now. Pinscope backs it up before every upload, and you'll restore it at the end.</span></label></li></ol></section>
+<section id="scan" class="sec">
+<div class="sechead"><span class="n">1</span><div><h2>Pins on the real board</h2><p class="intro">The camera labels every header pin live, using a board it learned from photos.</p></div><span class="mins">2 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-scan-0" data-k="scan-0"><span><b>Scan → Start live view</b>. Hold the tablet above the Mega until the status reads <i>Tracking</i>.</span></label></li><li><label><input type="checkbox" id="c-scan-1" data-k="scan-1"><span>Move the tablet around. All 86 pin labels stay on their pins; the long double header's labels turn sideways.</span></label></li><li><label><input type="checkbox" id="c-scan-2" data-k="scan-2"><span>Tap a pin (try <span class=pin>D9</span>) for its timer, PWM and which kit parts use it.</span></label></li><li><label><input type="checkbox" id="c-scan-3" data-k="scan-3"><span>Tap the <b>PWM</b> and <b>Analog</b> filter chips to highlight just those pins.</span></label></li><li><label><input type="checkbox" id="c-scan-4" data-k="scan-4"><span>Tap the shutter. On the frozen photo, write a note with the pen, then hold the side button and stroke over it to erase.</span></label></li><li><label><input type="checkbox" id="c-scan-5" data-k="scan-5"><span>Save the annotated photo (it goes to <i>Pictures/Pinscope</i>).</span></label></li></ol><p class="note">Another Mega can be taught from one photo: drag the four markers to SCL, 21, A15 and NC, then tap Done.</p></section>
+<section id="board" class="sec">
+<div class="sechead"><span class="n">2</span><div><h2>Board diagram and pen wiring</h2><p class="intro">A to-scale Mega you can draw on. Wires become code.</p></div><span class="mins">2 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-board-0" data-k="board-0"><span><b>Board</b> tab. Hover the pen just above a pin: a card says what it is, without tapping.</span></label></li><li><label><input type="checkbox" id="c-board-1" data-k="board-1"><span>Draw with the pen from <span class=pin>13</span> out to empty space. Name it <code>LED</code>.</span></label></li><li><label><input type="checkbox" id="c-board-2" data-k="board-2"><span>Draw from <span class=pin>2</span>, name it <code>button</code>. Drag a wire's end to re-route it; drag its middle to bend it.</span></label></li><li><label><input type="checkbox" id="c-board-3" data-k="board-3"><span>Hold the side button and stroke across a wire to erase it, then undo by redrawing.</span></label></li><li><label><input type="checkbox" id="c-board-4" data-k="board-4"><span>Tap <b>Make sketch</b>. The editor opens with <code>const int LED = 13;</code>, <code>const int button = 2;</code> and guessed <code>pinMode</code> lines.</span></label></li></ol></section>
+<section id="parts" class="sec">
+<div class="sechead"><span class="n">3</span><div><h2>Kit parts</h2><p class="intro">All 29 parts of the ELEGOO Mega kit with pinouts, wiring, resistor advice and datasheets.</p></div><span class="mins">1 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-parts-0" data-k="parts-0"><span><b>Parts</b> tab. Open <b>HC-SR04</b> to show its pinout and the kit lesson wiring.</span></label></li><li><label><input type="checkbox" id="c-parts-1" data-k="parts-1"><span>Tap <b>Show on my board</b>. Its pins light up on the diagram (or on the photo from the Scan tab).</span></label></li></ol></section>
+<section id="sim" class="sec">
+<div class="sechead"><span class="n">4</span><div><h2>Simulator tour</h2><p class="intro">A real ATmega2560 emulator runs the compiled program, timers and interrupts included, in real time. Nothing can be damaged.</p></div><span class="mins">3 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-sim-0" data-k="sim-0"><span>From <b>Make sketch</b> (previous step), add a <code>loop()</code> that lights the LED while the button is pressed, then tap <b>Simulate</b>. It compiles on the tablet and opens the simulator with an LED and button already added.</span></label></li><li><label><input type="checkbox" id="c-sim-1" data-k="sim-1"><span>Hold the virtual button: the LED on the board diagram lights.</span></label></li><li><label><input type="checkbox" id="c-sim-2" data-k="sim-2"><span>Remove <code>pinMode(LED, OUTPUT)</code> and simulate again: a warning explains the LED only glows faintly because the pin is an input.</span></label></li><li><label><input type="checkbox" id="c-sim-3" data-k="sim-3"><span><b>Bench → Sketches → Arduino examples</b>, search <i>HelloWorld</i> (LiquidCrystal) and tap 🧪. The LCD appears with its kit pins; text shows in the real HD44780 font.</span></label></li><li><label><input type="checkbox" id="c-sim-4" data-k="sim-4"><span>Drag the LCD's <b>contrast</b> slider: text fades out, or turns into solid blocks, like a badly set real contrast pot.</span></label></li><li><label><input type="checkbox" id="c-sim-5" data-k="sim-5"><span>Top bar speed menu: show <b>¼×</b> slow motion, then <b>4×</b> and <b>Max</b>. The readout shows real time vs. simulated time.</span></label></li><li><label><input type="checkbox" id="c-sim-6" data-k="sim-6"><span>Optional: add an <b>MPU-6050</b> part and switch on <i>Use this device's motion sensors</i>, then tilt the tablet.</span></label></li></ol><p class="note">Tablets show the board and the parts side by side. The Serial tab has a Monitor and a Plotter.</p></section>
+<section id="compile" class="sec">
+<div class="sechead"><span class="n">5</span><div><h2>Write, compile and upload on the tablet</h2><p class="intro">GCC runs on the tablet itself, offline. The board's current sketch is backed up before writing.</p></div><span class="mins">2 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-compile-0" data-k="compile-0"><span>Connect the Mega. <b>Bench → Sketches → My sketches → New</b>, or open any Quick start sketch with <b>Edit</b>.</span></label></li><li><label><input type="checkbox" id="c-compile-1" data-k="compile-1"><span>Tap <b>Verify</b>: about a second to compile. Add a typo to show an error with its line; tap the error to jump there. Fix it.</span></label></li><li><label><input type="checkbox" id="c-compile-2" data-k="compile-2"><span>Tap <b>Upload</b>. Steps show: compile, back up the board, write, verify. The monitor opens at the sketch's <code>Serial.begin()</code> speed.</span></label></li><li><label><input type="checkbox" id="c-compile-3" data-k="compile-3"><span>Mention <b>From the web</b>: paste a GitHub link to an <code>.ino</code> and it compiles here too.</span></label></li></ol></section>
+<section id="demos" class="sec">
+<div class="sechead"><span class="n">6</span><div><h2>Demo sketches</h2><p class="intro">Six Quick start sketches, each runnable on the real Mega or the simulator. In the simulator, the sketch's <code>// Simulator:</code> line wires up the probes, RC filter and parts by itself.</p></div><span class="mins">6 min</span></div>
+<div class="seg" role="group" aria-label="Show steps for">
+<button type="button" data-show="both" aria-pressed="true">Both</button><button type="button" data-show="board" aria-pressed="false">Board</button><button type="button" data-show="sim" aria-pressed="false">Simulator</button></div>
+<div class="demos"><article class="demo" id="d-siggen">
+<header><h3>Signal generator</h3><code class="file">SignalGenerator.ino · 115 200 baud</code></header>
+<p class="what">A function generator for a lab oscilloscope: square wave on pin 11 (1 Hz – 100 kHz, timer hardware so no jitter), PWM on pin 9, and sine / triangle / sawtooth on pin 6.</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-siggen-b-0" data-k="d-siggen-b-0"><span><b>Quick start → Signal generator → Upload</b>.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-b-1" data-k="d-siggen-b-1"><span>Lab scope: probe tip on <span class=pin>11</span>, ground clip on <span class=pin>GND</span>. It starts at 1 kHz.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-b-2" data-k="d-siggen-b-2"><span>In the monitor type <code>s500</code>, <code>s20000</code>. Watch the scope follow.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-b-3" data-k="d-siggen-b-3"><span>Probe <span class=pin>9</span>, then type <code>d25</code> and <code>d75</code> to change the duty.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-b-4" data-k="d-siggen-b-4"><span>For the sine: <span class=pin>6</span> → 10 kΩ → probe point, 100 nF (104) from there to GND. Type <code>w1 20</code>, then <code>w2 20</code> (triangle), <code>w3 20</code> (sawtooth).</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-siggen-s-0" data-k="d-siggen-s-0"><span><b>Quick start → Signal generator → 🧪</b>.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-s-1" data-k="d-siggen-s-1"><span>Three oscilloscope probes open by themselves: pin 11 (1 kHz square), pin 9 (50% PWM) and A0, which sits after an <b>RC filter</b> (10 kΩ + 100 nF) on pin 6 and shows a 10 Hz sine.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-s-2" data-k="d-siggen-s-2"><span>Serial tab: send <code>s5000</code>, then set the pin 11 probe to <b>1 ms</b>: about 5 kHz.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-s-3" data-k="d-siggen-s-3"><span>Send <code>w2 10</code> and <code>w3 10</code>: triangle, then sawtooth on the A0 probe.</span></label></li><li><label><input type="checkbox" id="c-d-siggen-s-4" data-k="d-siggen-s-4"><span>Send <code>d10</code>: the pin 9 probe's pulses get narrow.</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>Pin 11 reads 1.00 kHz; A0 swings about 0–5 V at 10 Hz.</p>
+</article><article class="demo" id="d-rc">
+<header><h3>RC charging</h3><code class="file">RcCharge.ino · 115 200 baud</code></header>
+<p class="what">Charges a capacitor through a resistor and plots the curve. τ = R × C = 1 kΩ × 10 µF = 10 ms; after one τ the capacitor is at 63% (3.16 V).</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-rc-b-0" data-k="d-rc-b-0"><span>Wire <span class=pin>8</span> → 1 kΩ → <span class=pin>A0</span>, and 10 µF from <span class=pin>A0</span> to <span class=pin>GND</span> (stripe to GND).</span></label></li><li><label><input type="checkbox" id="c-d-rc-b-1" data-k="d-rc-b-1"><span><b>Quick start → RC charging → Upload</b>, then open the <b>Plotter</b>.</span></label></li><li><label><input type="checkbox" id="c-d-rc-b-2" data-k="d-rc-b-2"><span>The <i>cap</i> line curves up and down; the <i>tau</i> line marks 63% (and 37% on the way down).</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-rc-s-0" data-k="d-rc-s-0"><span><b>Quick start → RC charging → 🧪</b>. It adds the RC filter (1 kΩ, 10 µF), a probe on A0 and one on pin 8.</span></label></li><li><label><input type="checkbox" id="c-d-rc-s-1" data-k="d-rc-s-1"><span>On the A0 probe, the curve starts at the left quarter mark. Count one division (10 ms): it reads about 3.2 V.</span></label></li><li><label><input type="checkbox" id="c-d-rc-s-2" data-k="d-rc-s-2"><span>On the RC card, change the capacitor to <b>100 µF</b>: τ shows 100 ms and the curve no longer reaches 5 V before the input switches.</span></label></li><li><label><input type="checkbox" id="c-d-rc-s-3" data-k="d-rc-s-3"><span>Serial tab → <b>Plotter</b>: the same cap / input / tau lines as on the real board.</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>63% after 10 ms; nearly full after 50 ms (5τ).</p>
+</article><article class="demo" id="d-bounce">
+<header><h3>Button bounce</h3><code class="file">ButtonBounce.ino · 115 200 baud</code></header>
+<p class="what">Counts how many edges one press makes. Metal contacts bounce, so a fast microcontroller sees several presses.</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-bounce-b-0" data-k="d-bounce-b-0"><span>Button between <span class=pin>2</span> and <span class=pin>GND</span> (the internal pull-up is used).</span></label></li><li><label><input type="checkbox" id="c-d-bounce-b-1" data-k="d-bounce-b-1"><span><b>Quick start → Button bounce → Upload</b>.</span></label></li><li><label><input type="checkbox" id="c-d-bounce-b-2" data-k="d-bounce-b-2"><span>Press and release a few times. Lines like <code>Pressed: 4 edges over 380 us (bounce)</code> appear. Cheap buttons bounce more.</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-bounce-s-0" data-k="d-bounce-s-0"><span><b>Quick start → Button bounce → 🧪</b>. The button has <b>Bouncy contacts</b> on, with a probe on pin 2 triggered on the falling edge.</span></label></li><li><label><input type="checkbox" id="c-d-bounce-s-1" data-k="d-bounce-s-1"><span>Hold to press. The probe shows the line chattering for about half a millisecond; tap pause to keep it.</span></label></li><li><label><input type="checkbox" id="c-d-bounce-s-2" data-k="d-bounce-s-2"><span>Serial tab: <code>Pressed: 3 edges over 456 us (bounce)</code>.</span></label></li><li><label><input type="checkbox" id="c-d-bounce-s-3" data-k="d-bounce-s-3"><span>Turn <b>Bouncy contacts</b> off and press again: exactly 1 edge. That is what debouncing code fakes.</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>2–6 edges per press, all within about 1 ms.</p>
+</article><article class="demo" id="d-light">
+<header><h3>Light meter</h3><code class="file">LightMeter.ino · 9600 baud</code></header>
+<p class="what">Plots a photoresistor as a percentage, raw and smoothed.</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-light-b-0" data-k="d-light-b-0"><span>5V → photoresistor → <span class=pin>A0</span>, and 10 kΩ from <span class=pin>A0</span> to <span class=pin>GND</span>.</span></label></li><li><label><input type="checkbox" id="c-d-light-b-1" data-k="d-light-b-1"><span><b>Quick start → Light meter → Upload</b>, open the <b>Plotter</b>.</span></label></li><li><label><input type="checkbox" id="c-d-light-b-2" data-k="d-light-b-2"><span>Cover the sensor, then shine the phone's torch on it.</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-light-s-0" data-k="d-light-s-0"><span><b>Quick start → Light meter → 🧪</b>. A photoresistor part is added on A0.</span></label></li><li><label><input type="checkbox" id="c-d-light-s-1" data-k="d-light-s-1"><span>Serial tab → <b>Plotter</b>. Drag the light slider: <i>light</i> jumps, <i>smooth</i> follows behind.</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>Higher light, higher number; the smooth line lags.</p>
+</article><article class="demo" id="d-dist">
+<header><h3>Distance</h3><code class="file">Distance.ino · 9600 baud</code></header>
+<p class="what">HC-SR04 ultrasonic sensor in centimetres: the echo time covers the distance twice at 0.0343 cm/µs.</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-dist-b-0" data-k="d-dist-b-0"><span>HC-SR04: VCC → <span class=pin>5V</span>, Trig → <span class=pin>12</span>, Echo → <span class=pin>11</span>, GND → <span class=pin>GND</span>.</span></label></li><li><label><input type="checkbox" id="c-d-dist-b-1" data-k="d-dist-b-1"><span><b>Quick start → Distance → Upload</b>, open the <b>Plotter</b>.</span></label></li><li><label><input type="checkbox" id="c-d-dist-b-2" data-k="d-dist-b-2"><span>Move your hand towards and away from the sensor.</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-dist-s-0" data-k="d-dist-s-0"><span><b>Quick start → Distance → 🧪</b>. The sensor is added on 12/11 from the code.</span></label></li><li><label><input type="checkbox" id="c-d-dist-s-1" data-k="d-dist-s-1"><span>Plotter tab; drag the object-distance slider. Past 400 cm it reads 0 (out of range).</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>Tracks the hand within about a centimetre.</p>
+</article><article class="demo" id="d-climate">
+<header><h3>Temperature and humidity</h3><code class="file">Climate.ino · 9600 baud</code></header>
+<p class="what">DHT11 temperature and humidity, read with the Adafruit DHT library every 2 seconds.</p>
+<div class="mode" data-mode="board"><div class="mlabel">On the board</div><ol class="steps"><li><label><input type="checkbox" id="c-d-climate-b-0" data-k="d-climate-b-0"><span>DHT11 module: S → <span class=pin>2</span>, middle → <span class=pin>5V</span>, − → <span class=pin>GND</span>.</span></label></li><li><label><input type="checkbox" id="c-d-climate-b-1" data-k="d-climate-b-1"><span><b>Quick start → Temperature and humidity → Upload</b>, open the <b>Plotter</b>.</span></label></li><li><label><input type="checkbox" id="c-d-climate-b-2" data-k="d-climate-b-2"><span>Breathe on the sensor: humidity jumps within a few seconds.</span></label></li></ol></div>
+<div class="mode" data-mode="sim"><div class="mlabel">In the simulator</div><ol class="steps"><li><label><input type="checkbox" id="c-d-climate-s-0" data-k="d-climate-s-0"><span><b>Quick start → Temperature and humidity → 🧪</b>. The DHT11 is found from <code>DHT dht(2, DHT11)</code>.</span></label></li><li><label><input type="checkbox" id="c-d-climate-s-1" data-k="d-climate-s-1"><span>Move the temperature and humidity sliders; the next reading (every 2 s) follows. The simulator speaks the DHT11's real one-wire timing.</span></label></li></ol></div>
+<p class="expect"><span>Expect</span>Room temperature and 30–60% humidity.</p>
+</article></div></section>
+<section id="firmata" class="sec">
+<div class="sechead"><span class="n">7</span><div><h2>Firmata and the instruments</h2><p class="intro">StandardFirmata lets the tablet drive every pin directly; the instruments are built on it.</p></div><span class="mins">3 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-firmata-0" data-k="firmata-0"><span><b>Bench → Firmata pins</b>. If the board doesn't answer, tap <b>Upload StandardFirmata</b>.</span></label></li><li><label><input type="checkbox" id="c-firmata-1" data-k="firmata-1"><span>Set <span class=pin>13</span> to Output and toggle it: the on-board LED follows. On the Scan tab's photo, <b>live pin states</b> show on the real pins.</span></label></li><li><label><input type="checkbox" id="c-firmata-2" data-k="firmata-2"><span><b>Voltmeter</b> on A0: touch A0 to 3.3V, then 5V. Mention the ÷2/÷3/÷5 divider presets and <b>Calibrate</b> (a phone's USB 5 V rail is often 4.6 V, which made a 9 V battery read 10 V).</span></label></li><li><label><input type="checkbox" id="c-firmata-3" data-k="firmata-3"><span><b>Logic monitor</b>: watch a button on pin 2 over the last 10 seconds.</span></label></li><li><label><input type="checkbox" id="c-firmata-4" data-k="firmata-4"><span><b>PWM generator</b> on pin 9 with an LED: duty slider, waveform and average voltage.</span></label></li><li><label><input type="checkbox" id="c-firmata-5" data-k="firmata-5"><span><b>Servo tester</b> with the SG90 on pin 9: drag the dial (0° left, 180° right, seen from above with the wires at the top), sweep, and the Standard / SG90 pulse presets.</span></label></li></ol></section>
+<section id="scope" class="sec">
+<div class="sechead"><span class="n">8</span><div><h2>Oscilloscope lab demos</h2><p class="intro">The main event. Fast mode uploads Pinscope's scope sketch: one pin at up to 77 000 samples a second, triggered on the board, plus a built-in signal generator.</p></div><span class="mins">5 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-scope-0" data-k="scope-0"><span><b>Instruments → Oscilloscope → Fast</b>. Accept the upload of the scope sketch; tap <b>Start</b>.</span></label></li><li><label><input type="checkbox" id="c-scope-1" data-k="scope-1"><span><b>PWM duty</b> chip. Jumper <span class=pin>9</span> → <span class=pin>A0</span>. Move the duty slider: the high part grows, the 2.04 ms period doesn't.</span></label></li><li><label><input type="checkbox" id="c-scope-2" data-k="scope-2"><span><b>Frequency</b>. Move the jumper to <span class=pin>11</span>. Tap two rising edges with the pen for cursors A and B: Δt 1.00 ms, 1.00 kHz.</span></label></li><li><label><input type="checkbox" id="c-scope-3" data-k="scope-3"><span><b>Aliasing</b> (same jumper). At 100 ms across, the 10 kHz square looks like a slow wave. Switch to 1 ms: the real signal. Nyquist: sample more than twice as fast as the signal.</span></label></li><li><label><input type="checkbox" id="c-scope-4" data-k="scope-4"><span><b>RC charging</b>. <span class=pin>11</span> → 1 kΩ → <span class=pin>A0</span>, 10 µF A0 → GND. Cursors at the start of the rise and at 3.16 V: about 10 ms.</span></label></li><li><label><input type="checkbox" id="c-scope-5" data-k="scope-5"><span><b>PWM to DC</b>. <span class=pin>9</span> → 10 kΩ → <span class=pin>A0</span>, keep the 10 µF. A flat line at duty × 5 V; move the slider and it follows.</span></label></li><li><label><input type="checkbox" id="c-scope-6" data-k="scope-6"><span><b>Sine wave</b>. <span class=pin>6</span> → 10 kΩ → <span class=pin>A0</span>, 100 nF (104) A0 → GND. A 10 Hz sine from PWM; try triangle and sawtooth.</span></label></li><li><label><input type="checkbox" id="c-scope-7" data-k="scope-7"><span><b>Button bounce</b>. Button between <span class=pin>A0</span> and GND (the generator's pull-up switch is on). Press; tap pause on a good capture.</span></label></li></ol><p class="note">No 10 µF? A 100 µF works: τ becomes 100 ms, so set the square to 1 Hz and the span to 500 ms.</p></section>
+<section id="wrap" class="sec">
+<div class="sechead"><span class="n">9</span><div><h2>Wrap-up</h2><p class="intro">Leave the board as you found it.</p></div><span class="mins">1 min</span></div>
+<ol class="steps"><li><label><input type="checkbox" id="c-wrap-0" data-k="wrap-0"><span><b>Bench → Sketches → Backups</b>: tap <b>Restore</b> on the backup from before the demo. Your own sketch is back.</span></label></li><li><label><input type="checkbox" id="c-wrap-1" data-k="wrap-1"><span>Summary line: pin finder, offline compiler and uploader, a simulator that catches mistakes before they reach hardware, and a pocket bench of instruments.</span></label></li></ol></section>
+</main>
+<footer>Pin numbers are Arduino Mega numbers. Board wiring uses the ELEGOO Mega starter kit parts.</footer>
+</div>
+
+<script>
+(function(){
+  const KEY='pinscope-demo-ticks';
+  let st={}; try{st=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){st={}}
+  const boxes=[...document.querySelectorAll('input[type=checkbox][data-k]')];
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function update(){
+    const steps=boxes.filter(b=>!b.dataset.k.startsWith('kit-'));
+    const done=steps.filter(b=>b.checked).length;
+    document.getElementById('bar').style.width=(steps.length?done/steps.length*100:0)+'%';
+    document.getElementById('ptext').textContent=done+' of '+steps.length+' steps';
+    document.querySelectorAll('nav.rail a').forEach(a=>{
+      const sec=document.querySelector(a.getAttribute('href'));
+      const bs=sec?[...sec.querySelectorAll('input[data-k]')].filter(b=>b.offsetParent!==null||!b.closest('.mode')):[];
+      a.classList.toggle('done',bs.length>0&&bs.every(b=>b.checked));
+    });
+  }
+  boxes.forEach(b=>{b.checked=!!st[b.dataset.k];b.addEventListener('change',()=>{st[b.dataset.k]=b.checked;save();update()})});
+  document.getElementById('reset').addEventListener('click',()=>{st={};save();boxes.forEach(b=>b.checked=false);update()});
+  const demos=document.querySelector('.demos');
+  const seg=[...document.querySelectorAll('.seg button')];
+  function show(m){demos.dataset.show=m;seg.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.show===m)));try{localStorage.setItem(KEY+'-show',m)}catch(e){};update()}
+  seg.forEach(b=>b.addEventListener('click',()=>show(b.dataset.show)));
+  let m='both';try{m=localStorage.getItem(KEY+'-show')||'both'}catch(e){}
+  show(m);
+})();
+</script>
