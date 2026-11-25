@@ -99,6 +99,9 @@ class Simulator(val kit: KitData, image: ByteArray, val name: String) {
         set(v) { field = v; rateChanged = true }
     @Volatile private var rateChanged = false
     @Volatile var stopped = false
+    @Volatile var muted = false
+    @Volatile var buzzers: List<Meter> = emptyList()   // read by the audio thread
+        private set
     val tick = MutableStateFlow(0L)   // bumps about 30 times a second
     val warnings: StateFlow<List<String>> get() = _warnings
     private val _warnings = MutableStateFlow<List<String>>(emptyList())
@@ -157,6 +160,7 @@ class Simulator(val kit: KitData, image: ByteArray, val name: String) {
         val l = Array(70) { ArrayList<Pair<SimPart, Int>>() }
         for (p in parts) p.pins.forEachIndexed { role, n -> if (n in 0..69) l[n] += p to role }
         listeners = Array(70) { l[it].toTypedArray() }
+        buzzers = parts.filterIsInstance<Meter>().filter { it.type == PartType.BUZZER }
     }
 
     fun addPart(p: SimPart) = post { p.sim = this; parts += p; rewire(); p.attach() }
@@ -507,10 +511,39 @@ class Meter(t: PartType, pins: IntArray) : SimPart(t, pins) {
     private var rise = 0L; private var lastEdge = 0L; private var toggles = 0; private var window = 0L
     @Volatile var pulseUs = 0.0; @Volatile var freq = 0.0; @Volatile var on = false
     @Volatile var minUs = 544f; @Volatile var maxUs = 2400f
+    // Pitch heard right now in Hz (0 = silent), updated every millisecond for buzzers
+    @Volatile var sound = 0f
+    private var period = 0L
     override fun onEdge(role: Int, level: Int) {
         val t = sim.now
-        if (level == 1) rise = t else if (rise > 0) pulseUs = sim.us(t - rise)
+        if (level == 1) {
+            // a gap longer than 50 ms (below 20 Hz) starts a new tone
+            period = if (rise > 0 && t - rise < CLOCK / 20) t - rise else 0L
+            rise = t
+        } else if (rise > 0) pulseUs = sim.us(t - rise)
         toggles++; lastEdge = t
+    }
+    override fun attach() { if (type == PartType.BUZZER) listen() }
+    override fun reset() {
+        rise = 0; lastEdge = 0; toggles = 0; window = 0; period = 0
+        pulseUs = 0.0; freq = 0.0; on = false; sound = 0f
+    }
+    private fun listen() {
+        sim.after(1000.0) {
+            if (this !in sim.parts) { sound = 0f; return@after }
+            sound = pitch()
+            listen()
+        }
+    }
+    private fun pitch(): Float {
+        val pin = pins[0]
+        if (pin !in 0..69 || !sim.isOutput(pin)) return 0f
+        val duty = sim.duty(pin)
+        if (duty in 1..254) { val p = sim.pwmPeriod(pin); return if (p > 0) CLOCK.toFloat() / p else 0f }
+        val idle = sim.now - lastEdge
+        if (period > 0 && idle < period * 2 + CLOCK / 1000) return CLOCK.toFloat() / period
+        // held HIGH: an active buzzer makes its own tone
+        return if (sim.level(pin) == 1 && idle > CLOCK / 200) ACTIVE_HZ else 0f
     }
     override fun frame() {
         val t = sim.now
@@ -520,6 +553,7 @@ class Meter(t: PartType, pins: IntArray) : SimPart(t, pins) {
         if (t - lastEdge > CLOCK / 4) { freq = 0.0; if (type == PartType.SERVO) pulseUs = 0.0 }
         on = sim.level(pins[0]) == 1 || freq > 0
     }
+    private companion object { const val ACTIVE_HZ = 2300f }
     val angle: Float get() = if (pulseUs <= 0) -1f else ((pulseUs.toFloat() - minUs) / (maxUs - minUs) * 180f).coerceIn(0f, 180f)
 }
 

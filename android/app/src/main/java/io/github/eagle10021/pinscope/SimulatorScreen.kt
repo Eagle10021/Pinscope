@@ -38,13 +38,21 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeveloperBoard
+import androidx.compose.material.icons.rounded.DeveloperBoardOff
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RestartAlt
@@ -99,6 +107,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlin.math.log2
 import kotlin.math.roundToInt
 
@@ -120,6 +129,16 @@ fun SimulatorScreen(vm: AppViewModel, sim: Simulator) {
     var adding by remember { mutableStateOf(false) }
     val wide = LocalWide.current
     val live = remember(tick) { sim.pinStates() }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("pinscope", 0) }
+    var muted by remember { mutableStateOf(prefs.getBoolean("simMuted", false)) }
+    LaunchedEffect(sim, muted) { sim.muted = muted; prefs.edit().putBoolean("simMuted", muted).apply() }
+    var partsOnly by remember { mutableStateOf(prefs.getBoolean("simPartsOnly", false)) }
+    // buzzer sound only while this screen is in front
+    LifecycleResumeEffect(sim) {
+        val audio = BuzzerAudio(sim).also { it.start() }
+        onPauseOrDispose { audio.stop() }
+    }
 
     Column(Modifier.fillMaxSize().imePadding()) {
         // top bar
@@ -133,7 +152,12 @@ fun SimulatorScreen(vm: AppViewModel, sim: Simulator) {
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            IconButton(onClick = { partsOnly = !partsOnly; prefs.edit().putBoolean("simPartsOnly", partsOnly).apply() }) {
+                Icon(if (partsOnly) Icons.Rounded.DeveloperBoardOff else Icons.Rounded.DeveloperBoard, if (partsOnly) "Show the board" else "Show only the parts",
+                    tint = if (partsOnly) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current)
+            }
             SpeedMenu(sim)
+            IconButton(onClick = { muted = !muted }) { Icon(if (muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, if (muted) "Unmute buzzers" else "Mute buzzers") }
             IconButton(onClick = { sim.running = !sim.running }) { Icon(if (sim.running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (sim.running) "Pause" else "Run") }
             IconButton(onClick = { sim.reset() }) { Icon(Icons.Rounded.RestartAlt, "Reset the simulated board") }
         }
@@ -149,7 +173,8 @@ fun SimulatorScreen(vm: AppViewModel, sim: Simulator) {
                 }
             }
         }
-        if (wide) Row(Modifier.weight(1f).fillMaxWidth()) {
+        if (partsOnly) panel(Modifier.weight(1f).fillMaxWidth())
+        else if (wide) Row(Modifier.weight(1f).fillMaxWidth()) {
             board(Modifier.weight(1f).fillMaxHeight().padding(12.dp))
             panel(Modifier.weight(1f).fillMaxHeight())
         } else {
@@ -218,8 +243,9 @@ private fun DrawScope.drawFallback(t: PartType) {
 @Composable
 private fun PartsPanel(vm: AppViewModel, sim: Simulator, tick: Long, warnings: List<String>, onAdd: () -> Unit) {
     var editing by remember { mutableStateOf<SimPart?>(null) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items(warnings) { w ->
+    LazyVerticalStaggeredGrid(StaggeredGridCells.Adaptive(360.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp),
+        verticalItemSpacing = 10.dp, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        gridItems(warnings, span = { StaggeredGridItemSpan.FullLine }) { w ->
             Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f)) {
                 Row(Modifier.padding(12.dp)) {
                     Icon(Icons.Rounded.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
@@ -227,12 +253,12 @@ private fun PartsPanel(vm: AppViewModel, sim: Simulator, tick: Long, warnings: L
                 }
             }
         }
-        if (sim.parts.isEmpty()) item {
+        if (sim.parts.isEmpty()) item(span = StaggeredGridItemSpan.FullLine) {
             Text("No parts yet. Add the sensors, buttons and displays your sketch expects; they behave like the real ones, so the sketch can be tried without risking a board.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
         }
-        items(sim.parts.toList(), key = { it.id }) { p -> PartCard(sim, p, tick, onPins = { editing = p }, onRemove = { sim.removePart(p); vm.saveSimPartsLater(sim) }) }
-        item {
+        gridItems(sim.parts.toList(), key = { it.id }) { p -> PartCard(sim, p, tick, onPins = { editing = p }, onRemove = { sim.removePart(p); vm.saveSimPartsLater(sim) }) }
+        item(span = StaggeredGridItemSpan.FullLine) {
             Button(onClick = onAdd, shapes = ButtonDefaults.shapes(), modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Rounded.Add, null); Spacer(Modifier.width(8.dp)); Text("Add a part")
             }
@@ -307,7 +333,7 @@ private fun PartControl(sim: Simulator, p: SimPart, tick: Long) {
         is Button -> if (p.type == PartType.TILT) Row(verticalAlignment = Alignment.CenterVertically) { Text("Tilted (switch closed)", Modifier.weight(1f)); Switch(p.pressed, { p.press(it) }) }
             else Column {
                 HoldButton(if (p.pressed) "Pressed · pin reads ${if (p.toVcc) "HIGH" else "LOW"}" else "Hold to press") { p.press(it) }
-                Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(!p.toVcc, { p.wire(false) }, label = { Text("To GND (INPUT_PULLUP)") })
                     FilterChip(p.toVcc, { p.wire(true) }, label = { Text("To 5V + pull-down (INPUT)") })
                 }
